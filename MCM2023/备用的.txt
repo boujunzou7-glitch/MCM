@@ -1,0 +1,59 @@
+    % \begin{figure}[htb] 
+    %     \centering
+    %     \includegraphics[width=15cm]{f11.png}
+    %     \caption{ACF of Final difference data - Hard mode results} \label{f11}~~
+    % \end{figure}
+    %     \begin{figure}[htb]
+    %     \includegraphics[width=15cm]{f12.png}
+    %     \caption{PACF of Final difference data - Hard mode results}
+    %        \end{figure}
+
+% % 表5
+% \begin{table}[htb]  %h表示固定在当前位置
+%     \centering        %设置居中
+%     \caption{ARIMEA(1,1,0) Model Test Table - Hard mode results}  %表标题
+%     \vspace{0.3cm}
+%     \label{tab5}                       %设置表的引用标签
+%     % \tabcolsep=1cm
+%     \renewcommand\arraystretch{1.5}
+%     \begin{tabular}{|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+%     \hline                    %画横线
+%     Variables & Notations & Values\\ \hline  %各列间用&隔开
+%       & Df Residuals & 278 \\ \hline 
+%     Sample Size & N & 281 \\ \hline
+%     Q statistc(P) & Q6 & 0.002(0.968)\\ \hline
+%     Goodness of Fit & $\boldsymbol{R}^{2}$ & 0.936 \\ \hline
+%     \end{tabular}
+% \end{table}
+
+% %表6
+% \begin{table}[htb]  %h表示固定在当前位置
+%     \centering        %设置居中
+%     \caption{ARIMEA(0,1,1) Model Parameter Table - Hard mode results}  %表标题
+%     \vspace{0.3cm}
+%     \label{tab6}                       %设置表的引用标签
+%     % \tabcolsep=1cm
+%     \renewcommand\arraystretch{1.2}
+%     \begin{tabular}{|c|c|c|c|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+%     \hline                    %画横线
+%     ~ & Coefficient & Standard Deviation & t & P>|t| & 0.025 & 0.975\\ \hline  %各列间用&隔开
+%     Constant & 1.918 & 35.934 & 0.053 & 0.957 & -68.512 & 72.348 \\ \hline 
+%     % \multicolumn{2}{c}{\makecell[c]{Semi-Supervised \\ Learning}}
+%     \multirow{3}{*}{ar.L1.D.} & ~ & ~ & ~ & ~ & ~ & ~ \\ 
+%     ~ & -0.298 & 0.057 & -5.228 & 0 & -0.409 & -0.186 \\ 
+%     Number in hard mode & ~ & ~ & ~ & ~ & ~ & ~ \\ \hline
+%     \end{tabular}
+% \end{table}
+
+\begin{figure}[htb] 
+        \centering
+        \includegraphics[width=15cm,height=8cm]{f10.png}
+        \caption{the sequence diagram in one order - Hard mode results} \label{f10}~~
+     
+        \subfigure[ACF]{               %小图题的名称
+            \includegraphics[width=4cm]{11-1}}
+            \hspace{10pt}  %2张图片的水平距离
+        \subfigure[PACF]{
+            \includegraphics[width=4cm]{11-2}}
+            \caption{两张图片公用的图题}
+    \end{figure}

@@ -1,0 +1,951 @@
+%双击，ctrl+alt+J
+\documentclass{mcmthesis}
+\mcmsetup{CTeX = false,    % 使用 CTeX 套装时，设置为 true
+          tcn = {2305810}, problem = \textcolor{red}{C},
+          sheet = true, titleinsheet = true, keywordsinsheet = true,
+          titlepage = false, abstract = false}
+        
+\usepackage{newtxtext}     % \usepackage{palatino}
+\usepackage[backend=bibtex]{biblatex}   % for RStudio Complie
+
+\usepackage{tocloft}
+\setlength{\cftbeforesecskip}{6pt}
+\renewcommand{\contentsname}{\hspace*{\fill}\Large\bfseries Contents \hspace*{\fill}}
+%...
+\usepackage{multirow} % Required for multirows
+%...
+\makeatletter
+\let\c@lofdepth\relax
+\let\c@lotdepth\relax
+\makeatother
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subfigure}
+\usepackage{float} 
+\title{Predicting Wordle Results based on Arima, Decision Tree, K-means models}
+% \author{\small \href{http://www.latexstudio.net/}
+%   {\includegraphics[width=7cm]{mcmthesis-logo}}}
+\date{\today}
+
+\begin{document}
+
+\begin{abstract}
+    Wordle is a daily puzzle game from the New York Times.  This paper focuses on data prediction, machine learning and classification problems.  We can confirm the accuracy of our model by ADF, ACF/ PACF and other methods.  We predict the future results of the puzzle using methods such as linear programming.  This paper also illustrates influence difficulty level and attributes of the words have on the result and difficulty grades.
+    
+    For question 1, the time series prediction ARIMA model and the CRITIC weight model are used.  First we preprocess the data, such as deleting outliers and irrelevant variables.  Then we estimate whether the processed data meets the prerequisite requirements of ARIMA.  Then we get the values of p,d,q by denoising.  Afterwards we can get the reason of the daily change in the number of reported results and the prediction interval of March 1, 2023.  We consider that the attributes of words affect the difficulty of the answer words and thus affect the percentage of scores reported.  We use MOP to determine the four attributes of words.  According to the model, we can find the weight proportion in order to get two equations of difficulty level based on attributes and difficulty level based on scores reported.  After inputting the given data, we are able to ensure that attributes influence the percentage of scores in Hard Mode and degrees of these influence.
+
+    To solve question 2, we introduce the Decision Tree.  Firstly, parameter values are set to establish the Decision Tree.  Then we put two kinds of data obtained in the first question into the model evaluation table to determining the test set and the training set.  We then can evaluate the accuracy of the model.  According to question1, we can get the estimated regression equations of two kinds of difficulty quantification.  Afterwards, we calculate the difficulty level based on estimated regression equation with the given data to predict the score reported for a specific word.  Then we put the word EERIE into our model and get the result.
+
+    For question 3 we use Cluster analysis model (K-means) to classify the difficulty levels.  We import the data into the clustering model to obtain the cluster analysis graph in order to get the model evaluation table.  We get the clustering category order through field difference analysis  and high accuracy of the model confirmed by the values of DBI and CH.
+
+    To solve question 4, we determine to use a Q-Q plot.  We insert the number of guesses per day and find that the data for each number of guesses is normally distributed.
+
+    About our model we discuss the accuracy, advantages and disadvantages.  We consider our model has high accuracy.
+    
+\begin{keywords}
+ ARIMA model, Decision tree, Cluster analysis, Linear regression equation  
+\end{keywords}
+
+\end{abstract}
+
+\maketitle
+
+%% Generate the Table of Contents, if it's needed.
+% \renewcommand{\contentsname}{\centering Contents}
+\tableofcontents   % 若不想要目录, 注释掉该句
+\thispagestyle{empty}
+
+\newpage
+
+
+\section{Introduction}
+
+\subsection{Background}
+
+Wordle is a daily puzzle offered by the New York Times. Players solve the puzzle by making no more than six guesses at a five-letter actual English word and they gain immediate feedback after making every guess. Players are not allowed to guess words that are unrecognized by the contest. The puzzle includes a regular mode and a “Hard Mode”. Wordle is increasingly popular and has been available in more than sixty languages. We focus exclusively on the English version.
+
+\subsection{Introduction of Wordle}
+
+According to the directions of Wordle posted to the New York Times website, the color of each tile will change once a player has submitted the word \cite{1}. The color represents the accuracy of the player’s guess at each letter in the tiles. If a letter is in a gray tile, it is completely not in the answer. If a letter is in a yellow tile, it is in the wrong location of the answer. If a letter is in a green tile, it is in the answer and the exact location. Hard Mode is more difficult to the players because they have to use the correct letters they have found in previous guesses (letters in green or yellow tiles) to do the following guesses. Wordle offers only one puzzle everyday. If the puzzle can not be solved within six guesses, the players have to wait till the next day for a brand new five-letter English word.
+
+\subsection{Restatement of the Problem and Our Analyses}
+
+\subsubsection{Specific Problems to Solve}
+
+\begin{itemize}
+    \item {\bf Question 1 :} We are required to establish a model to explain the daily variation of the data from reported results. Then we use this model to create a prediction interval for the number of reported results on March 1, 2023. We are expected to find out whether any attribute of the word has an impact on the percentage of the scores that were reported in the Hard Mode. If any, we need to describe the way it does. If not, we need to explain the reason.
+    
+    \item {\bf Question 2 :} We are expected to establish a model for a given future answer to the puzzle on a future date. We are able to use this model to make a prediction for the associated percentage of (1,2,3,4,5,6,X) for a future date. Then we describe the indeterminacy of our model and predictions. We take the word EERIE on March,1,2023 for an specific example. We then show our confidence in our prediction from the model.
+    
+    \item {\bf Question 3 :} We are asked to categorize the answer words according to difficulty by establishing and summarizing a model. This model allows us to identify the attributes of a given word related to each category. We use this model to show the difficulty of the word EERIE. Then we illustrate the accuracy of this model. 
+    
+    \item {\bf Question 4 :} We are required to list and depict some other interesting characteristics of this data set. 
+    \end{itemize}
+
+\subsubsection{Analyses of the Problems}
+To solve the above problems, we will proceed as follows:
+\begin{itemize}
+\item {\bf Preprocessing data}. After preprocessing data, the influence of abnormal data will be reduced and the effects of the subsequent analyses will be increased.
+
+\item {\bf Stating assumptions}. By stating our assumptions, we will avoid uncontrollable minor factors and simplify the modeling part by next process.
+
+\item {\bf Making notations}. We will offer a number of vital notations in order to make it clearer and better for us to illustrate our models.
+
+\item {\bf Establishing models, making analyses and finding solutions}. We build models based on the problems, analyze the data, and use the models to solve the corresponding problems.
+
+\item {\bf Evaluating our models}. Through the evaluation, we discuss about the advantages and the disadvantages of our models. 
+
+\item {\bf Further discussion}. We discuss about several interesting features that we have found in the data set.
+
+
+\end{itemize}
+
+\section{Data preprocessing}
+In order to improve the quality, the accuracy and the effectiveness of data, we adopt data cleaning technique. 
+\begin{itemize}
+    \item {\bf Outliers:} remove the data with an answer word less than 5 letters.
+    \item {\bf Sort:} Sort the entire table in ascending order according to "Contest Number".
+    \item {\bf Too few reported results:} remove data with less than 10000 reported results.
+    \item {\bf Abnormal sum of percentage:} remove data with sum of percentage for score that is greater than 100.
+\end{itemize}
+\section{Assumptions and Occasions}
+
+We aim to simplify our models and ensure the accuracy of our analyses. Therefore, we make the following assumptions with adequate reasons: 
+
+\begin{itemize}
+\item {\bf We ignore answer words in the data that are not five-letter}. Wordle is a puzzle which requires players to guess a five-letter word so we do not take other words without five letter into consideration during our analyses of data.
+
+\item {\bf Data after preprocessing is enough to support our models}. The amount of available data decreased from 359 to 281 after the data pretreatment. The processed data sufficient for us to analyze and establish our models.
+
+\item {\bf All the players have the same subjectivity.}. Individual differences of players are irrelevant and irregular, such as the familiarity to words and standard of English spelling. We exclude these differences between players by default so that we can narrow our focus on the key factors to find the solutions to the problems.
+
+\item {\bf The distributions of scores reported (numbers of guesses) in different modes are about the same}. Every players takes a different amount of guesses in the puzzle. Using these amounts, the percentage of scores reported that shows the distribution can be calculated. According to the percentage we can get the difficulty level of the specific answer word. The calculation will be illustrated in our later analyses. basically the same score reported distributions in two modes can ensure the difficulty level of the answer word always to be consistent, which is conducive to avoiding chaos in data. 
+\end{itemize}
+
+\section{Notations}
+
+\begin{center}
+\begin{tabular}{clc}
+~
+{\bf Symbols} & {\bf Description} \\[0.25cm]
+\hline 
+\\
+$Z_t$ & ACF/PACF coefficient correlation values & ~ \\[0.2cm]
+$p$ & Number of autoregressive terms \\[0.2cm]
+$q$ & Sliding average number of terms  \\[0.2cm]
+$d$ & The number of differences made by stationary sequences (order)  \\[0.2cm]
+$\varepsilon$ & zero mean white noise sequence \\[0.2cm]
+$R_j$ & Correlation coefficient between indicators \\[0.2cm]
+$W_j$ & The objective weight of the $j_th$ index \\[0.2cm]
+$\varGamma_w $ & difficulty value based on attributes of words \\[0.2cm]
+$\varGamma_s $ & difficulty value based on scores reported\\[0.2cm]
+$\varGamma_s^{'}$ & difficulty value based on estimated regression equation \\[0.2cm]
+$\rho_n $ & The value of the attributes of words, n = 1,2,3,4  \\[0.2cm]
+$\delta_n $ & The value of the score reported, n = 1,2,3,4,5,6,7  \\[0.2cm]
+$k$ & The number of cluster categories \\[0.2cm]
+\hline
+\end{tabular}
+\end{center}
+
+\noindent where we define the main parameters while specific value of those parameters will be given later.
+
+\section{Model Establishment and Problem Solutions}
+
+\subsection{Question 1}
+
+In our model, we aim to reach three goals: finding out the reason why the number of reported results changes every day, being able to create a prediction interval for the number of reported results on a specific date (take March 1, 2023 as an instance) and exploring if any attribute of the word influences the percentage of scores reported in Hard Mode. 
+
+ We start with applying the Autoregressive Integrated Moving Average model (ARIMA) to reach our first two goals.
+
+ We then introduce Analytic Hierarchy Process (AHP) and multi-objective programming (MOP). After our calculations and analyses by using Entropy Method and CRITIC weight method, we solve the rest of the problem.
+
+\subsubsection{Model I : Predicting Number of Reported Results}
+ARIMA model can explore the regularity in the development and changes of phenomena by analyzing time sequences. According to the information it gets, ARIMA model does predictions \cite{2}.
+
+\noindent First we make predictions of number of reported results  which are in the regular mode.
+\begin{itemize}
+    \item {\bf Test the stability}. 
+    
+    ARIMA model requires the sequence to satisfy the stability, which means neither the mean value nor the variance of the sequence varies over time. We introduce Augmented Dickey-Fuller test (ADF) to check whether the number of reported results in regular mode fulfill the criteria for a stationary sequence \cite{3}.
+    
+    Equation based on random walk:
+    \begin{equation} \label{eq1}
+        X_t = X_t-1 + \omega_t, X_t(0,t{\sigma}^{2})
+        % \frac{\partial u}{\partial x} + \frac{\partial v}{\partial y} +\frac{\partial w}{\partial z} =0
+        \end{equation}
+    One order difference equation of random walk: 
+    \begin{equation} \label{eq2}
+        \Delta X_t = X_t - X_t-1 = \omega_t ,U_tN(0,{\sigma}^{2} )
+    \end{equation} 
+    $X_t$ is the position of the random walk at time t.
+
+    The fundamental idea of ADF is based on random walk. We calculate  through regressive computation. If p equals one, the sequence satisfies random walk and it is not stationary.
+    
+    According to the analysis of t-value, we are able to find out whether t-value can significantly reject the assumption that the sequence is nonstationary, which means that p-value is less than 0.5 .
+
+    The following table is generated by SPSSPRO:
+    \begin{table}[H]  %h表示固定在当前位置
+    \centering        %设置居中
+    \caption{ADF Test Table - Regular mode results}  %表标题
+    \vspace{0.15cm}
+    \renewcommand\arraystretch{1.2}
+    \label{tab1}                       %设置表的引用标签
+    \begin{tabular}{|c|c|c|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+    \hline                    %画横线
+    Variables & Difference order & t & P & AIC & Critical value 1\%   \\ \hline  %各列间用&隔开
+    \multirow{3}{*}{Number of reported results} & 0 & -6.262 & 0.000*** & 5225.478 & -3.456\\ 
+    & 1 & -6.170 & 0.000*** & 5235.110 & -3.456\\ 
+    & 2 & -12.03 & 0.000*** & 5224.5731 & -3.456\\ \hline 
+    \end{tabular}
+    \end{table}
+    
+    The result reflects that based on Number of reported results variables, when the difference is between zero order and second-order, significant p-value is 0.000***. We can find the achievement on the significant level. As a result, we reject the previous assumption and consider the sequence to be a stationary time sequence. The difference order d is zero.
+
+    The Figure 1 is the sequence diagram of the original data when the difference is zero order.
+     
+    \begin{figure}[H] 
+        \centering
+        \vspace{-0.3cm}
+        \includegraphics[width=15cm]{f14.jpg}
+        \caption{the sequence diagram in zero order - Regular mode results} \label{f1}~
+        
+        \leftline{We changed the date unit of the X-axis to days to achieve image simplification. From figure 1 we can  } 
+        \leftline{find that data between the twentieth date and the thirtieth date is abnormal. So we delete these unusual }
+        \leftline{data and get a new Figure 2 as follows.}~
+        ~
+
+        \includegraphics[width=15cm]{f15.png}
+        \caption{the new sequence diagram in zero order - Regular mode results} 
+        \end{figure}
+
+        \item {\bf Determine the value of p and q}.
+        
+        In order to do analyses, we create ACF/PACF graphs \cite{4}.
+
+        To begin with, we introduce the autocorrelation equation and partial autocorrelation equation.
+
+        Autocorrelation coefficient equation:
+        \begin{equation} \label{eq3}
+            ACF(k) = \sum_{t=k+1}^{n}\frac{(Z_t - \overline{Z})(Z_{t-k} - \overline{Z})}{\sum_{t=1}^{n}{(Z_t - \overline{Z})}^{2} } 
+        \end{equation}
+
+        Partial autocorrelation coefficient equation:
+        \begin{equation} \label{eq4}    
+            PACF(k)=\frac{E(Z_t - EZ_t)(Z_{t-k} - EZ_{t-k})}{\sqrt{E{(Z_t - EZ_t)}^{2}}\sqrt{E{(Z_{t-k} - EZ_{t-k})}^{2}}  } = \frac{cov[(Z_t - \overline{Z_t} ),(Z_{t-k} - \overline{Z_{t-k}} )]}{\sqrt{var(Z_t - \overline{Z_t})}\sqrt{var(Z_{t-k} - \overline{Z_{t-k}})}  }        
+        \end{equation}
+
+        With the equations, the Figures 3 and Figure 4 are generated by SPSSPRO.
+        ~
+        \begin{figure}[H] 
+            \centering
+            \includegraphics[width=15cm,height=6.5cm]{f1.jpg}
+            \caption{ACF of Final difference data - Regular mode results} \label{f1}~~
+            \includegraphics[width=15cm,height=6.5cm]{f2.jpg}
+            \caption{PACF of Final difference data - Regular mode results}
+               \end{figure}
+        
+               The horizontal axis and vertical axis represent the amount of latency and autocorrelation coefficient.   
+               From the above Figures 3 and 4, we can get the value of ACF and the value of PACF. The ACF plot is censored at order q, the PACF plot is tailed and the ARIMA model can be reduced to MA(q) model. 
+               We can determine that p equals 0 and q equals 1.
+        By AIC equation:
+        \begin{equation} \label{eq5}    
+            AIC = -2\ln (L) + 2K
+        \end{equation}
+        and BIC equation:
+        \begin{equation} \label{eq6}    
+            BIC = -2\ln (L) + K\ln(n)
+        \end{equation}
+        The following Table 2 is generated by SPSSPRO.
+        % 表2
+    \begin{table}[H]  %h表示固定在当前位置
+        \centering        %设置居中
+        \caption{ARIMEA(0,1,1) Model Test Table - Regular mode results}  %表标题
+        \vspace{0.3cm}
+        \label{tab2}                       %设置表的引用标签
+        % \tabcolsep=1cm
+	    \renewcommand\arraystretch{1.5}
+        \begin{tabular}{|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+        \hline                    %画横线
+        Variables & Notations & Values\\ \hline  %各列间用&隔开
+          & Df Residuals & 267 \\ \hline 
+        Sample Size & N & 270 \\ \hline
+        \multirow{5}{*}{Q statistc(P)} & Q6 & 0.025(0.874)\\ 
+        & Q12 & 41.956(0.000***)\\
+        & Q18 & 47.473(0.000***)\\
+        & Q24 & 51.992(0.000***)\\
+        & Q30 & 64.024(0.000***)\\ \hline
+        \multirow{2}{*}{criterion} & AIC & 5824.503\\
+        & BIC & 5835.287\\ \hline
+        % $\boldsymbol{p}^{\rm max}$ 二次方
+        Goodness of Fit & $\boldsymbol{R}^{2}$ & 0.976 \\ \hline
+        \end{tabular}
+    \end{table}
+    
+    We identify the optimal parameters according to AIC criterion. Then we decide to use ARIMA model (0,1,1) for testing. 
+
+    Based on the variable which is the Number of reported results, we analyze the result of Q statistic. We can find no achievement of Q6 on a significant level after analyzing. Therefore, we are not able to reject the assumption that the residuals of the model are white noise sequences. The goodness of fit is equal to 0.976, which means that the model is splendid and can satisfy the requirements.
+    
+    \item {\bf Fit ARIMA model (p,d,q)}.
+    
+    From the previous steps, we know that d equals one, p equals to zero and q equals to one. So the fit model is ARIMA (0,1,1).  
+    %表3
+\begin{table}  %h表示固定在当前位置
+    \centering        %设置居中
+    \caption{ARIMEA(0,1,1) Model Parameter Table - Regular mode results}  %表标题
+    \vspace{0.1cm}
+    \label{tab3}                       %设置表的引用标签
+    % \tabcolsep=1cm
+    \renewcommand\arraystretch{1.2}
+    \begin{tabular}{|c|c|c|c|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+    \hline                    %画横线
+    ~ & Coefficient & Standard Deviation & t & P>|t| & 0.025 & 0.975\\ \hline  %各列间用&隔开
+    Constant & -223.978	& 590.31 & -0.379 & 0.704 & -1380.963 & 933.008 \\ \hline 
+    % \multicolumn{2}{c}{\makecell[c]{Semi-Supervised \\ Learning}}
+    \multirow{3}{*}{ma.L1.D.} & ~ & ~ & ~ & ~ & ~ & ~ \\ 
+    ~ & -0.197 & 0.054	& -3.632 & 0 & -0.303 & -0.091 \\ 
+    Number of reported results & ~ & ~ & ~ & ~ & ~ & ~ \\ \hline
+    \end{tabular}
+\end{table}
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=18cm]{f3.png}
+    \caption{Time series diagram - Regular mode results} \label{f3}
+       \end{figure}
+    
+    We adopt multiple linear regression and get the function.
+% 模型公式
+
+$y(t) = -223.978 - 0.197\times \varepsilon(t-1)$
+    
+Figure 5 offers the graph of the original data, fitted values and predictive values of the model. 
+
+The figure illustrates the incredible similarity of the trend of the fitted sequence to the trend of the actual sequence, which represents a well-fitting result.
+It is available for us to gain predictions of the two future months by using the above equations. Finally, we can conclude the prediction interval for the number of reported results on March 1, 2023.
+\item {\bf Predicting hard mode results}.
+
+On the basis of the above process, we predict the number of reported results from the hard mode in the same method. The main contents are as follows:
+%%普通表格1
+\begin{table}[H]  %h表示固定在当前位置
+    \centering        %设置居中
+    \caption{ADF Test Table - Hard mode results}  %表标题
+    \vspace{0.15cm}
+    \renewcommand\arraystretch{1.2}
+    \label{tab4}                       %设置表的引用标签
+    \begin{tabular}{|c|c|c|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+    \hline                    %画横线
+    Variables & Difference order & t & P & AIC & Critical value 1\%   \\ \hline  %各列间用&隔开
+    \multirow{3}{*}{Number in hard mode} & 0 & -1.433 & 0.566 & 4251.522 & -3.454\\ 
+    & 1 & -6.51	& 0.000*** & 4224.909 & -3.455\\ 
+    & 2 & -7.923 & 0.000*** & 4255.262 & -3.456\\ \hline 
+    \end{tabular}
+    \end{table}
+    % \begin{figure}[htb] 
+    %     \centering
+    %     \includegraphics[width=15cm,height=8cm]{f10.png}
+    %     \caption{the sequence diagram in one order - Hard mode results} \label{f10}~~
+    % \end{figure}
+                
+    From Table 4, we find when the difference is between one order and the second-order, the significant p-value is 0.000***. As a result, we reject the previous assumption and consider the sequence to be a stationary time sequence. The difference order d is one.
+
+    We can get the value of ACF and the value of PACF. The PACF plot is censored at order q, the partial ACF plot is tailed, and the ARMA model can be reduced to the MA (q) model.
+
+    We can determine that p equals 1 and q equals 0.
+
+
+    Based on the variable which is the Number of hard mode results, we analyze the result of the Q statistic. We can find no achievement of Q6 on a significant level after analyzing. Therefore, we are not able to reject the assumption that the residuals of the model are white noise sequences. The goodness of fit is equal to 0.936, which means that the model is splendid and can satisfy the requirements.
+    From the previous steps, we know that d equals one, p equals zero and q equals one. So the fit model is ARIMA (1,1,0).
+    We adopt multiple linear regression and get the function.
+$y(t) = 1.918 - 0.298\times y(t-1)$
+
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=18cm,height=8cm]{f13.png}
+    \caption{Time series diagram - Hard mode results} \label{f3}
+    \vspace{0.1cm}
+\end{figure}
+             
+\item {\bf Solution}.
+
+    The reason why the result number changes from day to day.
+    \begin{itemize}
+    \item[1)] The grasp to the words for public are different. 
+    \item[2)] The difficulty of the words varies from day to day.
+    \item[3)] Luck affects the number of attempts and score.
+    \item[4)] Breaks time affect the amount of time spent playing games and lead to changes in the number of players.
+    \item[5)] The popularity of games is changing everyday.
+    \end{itemize} 
+    
+    The number of reported results on March 1, 2023:
+   
+    % 表5
+\begin{table} [H] %h表示固定在当前位置
+    \centering        %设置居中
+    \caption{Predicted Value - Regular mode result}  %表标题
+    \vspace{0.2cm}
+    \label{tab7}                       %设置表的引用标签
+    % \tabcolsep=1cm
+    \renewcommand\arraystretch{1.2}
+    \begin{tabular}{|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+    \hline                    %画横线
+    Orders(Time) & Predictions \\ \hline  %各列间用&隔开
+    57 &	7675.796374129134 \\ \hline
+    58 &	7451.818678276901 \\ \hline
+    59 &	7227.840982424667 \\ \hline
+    60 &	7003.863286572434 \\ \hline
+    61 &	6779.8855907202005 \\ \hline
+    \end{tabular}
+\end{table}
+
+% 表6
+\begin{table}[H]  %h表示固定在当前位置
+    \centering        %设置居中
+    \caption{Predicted Value - Hard mode result}  %表标题
+    \vspace{0.2cm}
+    \label{tab7}                       %设置表的引用标签
+    % \tabcolsep=1cm
+    \renewcommand\arraystretch{1.2}
+    \begin{tabular}{|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+    \hline                    %画横线
+    Orders(Time) & Predictions \\ \hline  %各列间用&隔开
+    57 & 	2025.732199055149   \\ \hline
+    58 &    2027.6500514940612   \\ \hline
+    59 &	2029.5679039329734   \\ \hline
+    60 &	2031.4857563718856   \\ \hline
+    61 &	2033.4036088107978  \\ \hline
+    \end{tabular}
+\end{table}
+        
+
+   
+    Based on Table 5 and Table 6, the prediction interval for the number of reported results:
+        
+    Regular mode: $[6779.8856,7227.8410]$, the predicted value is near 7004.
+    
+    Hard mode: $[2029.5680,2033.4036]$, the predicted value is near 2031.
+
+\end{itemize}    
+
+
+\subsubsection{Model II : Probing whether attributes of words affect the percentage of scores reported in Hard Mode}
+
+\begin{itemize}
+    \item {\bf Analyze the data}.
+     
+    According to data in all data modes and data in Hard Mode, we create line charts and merge them into one as shown below:
+    \begin{figure}[htb] 
+        \centering
+        \includegraphics[width=15cm,height=8cm]{f16.png}
+        \caption{Comparison of hard mode results and all data results } \label{f16}
+        \vspace{0.1cm}
+    \end{figure}
+
+    From Figure 7 we can know that the trends of lines are roughly the same. Besides, through calculations, we find that ratios of the number in Hard Mode to the number of reported results are fundamentally about 10\%. Therefore, we get a result that the status of scores in the two modes are about the same and we consider them equivalent during the model establishment. 
+    
+    \item {\bf Determine attributes of words}.
+    
+    Based on AHP and MOP, we consider that there are four attributes that make an impact on the percentage of scores reported in Hard Mode. These attributes are frequency of letter appearance, frequency of initial letter appearance, containing duplicate letters, and vowel inclusion.
+
+    For the first two attributes, we calculate these two frequencies of both given data and dictionary data \cite{6}. Then we calculate the mean value and create Figure 8 and Figure 9:
+    \begin{figure}[H] 
+        \centering
+        \includegraphics[width=15cm,height=5cm]{f17.png}
+        \caption{Frequency of letter appearance} \label{f16}
+        \vspace{0.1cm}
+    \end{figure}
+    \begin{figure}[H] 
+        \centering
+        \includegraphics[width=15cm,height=5cm]{f18.png}
+        \caption{Frequency of initial letter appearance} \label{f16}
+        \vspace{0.1cm}
+    \end{figure}
+    According to these figures, we decide to consider the mean value as the value of attributes.
+    
+    For the last two attributes, we find that in the given data, the proportion of words containing duplicate letters is 0.278 and the proportion of words with vowel inclusion is 0.993.
+
+    The above data will be used in our subsequent weight estimation.
+
+    \item {\bf Develop our model}.
+    
+    We introduce the CRITIC weight method to give values of weight to attributes \cite{5}.
+
+    For the problem with multiple indicators and objects, the CRITIC weight method can eliminate the influence of some indicators with strong correlations and reduce the overlap of information between indicators. This method is beneficial to get a reliable result. 
+
+    Because we consider that there are multiple attributes influencing the result, we use the CRITIC weight method in order to ensure the accuracy and reliability of our analyses.
+    
+    Positive index equation:
+    
+    \begin{equation} \label{eq6}    
+        {{x}_{ij}}^{'} = \frac{X_ij-min(X_{1j},X_{nj},···,X_{nj})}{max(X_{1j},X_{nj},···,X_{nj})-min((X_{1j},X_{nj},···,X_{nj}))} 
+    \end{equation}
+
+    Negative index equation:   
+
+    \begin{equation} \label{eq7}
+        {{x}_{ij}}^{'} = \frac{max(X_{1j},X_{nj},···,X_{nj})-X_ij}{max(X_{1j},X_{nj},···,X_{nj})-min((X_{1j},X_{nj},···,X_{nj}))} 
+    \end{equation}
+
+    Index variability equation:
+
+    $$
+    \left\{ 
+    \begin{matrix}
+        \overline{x} & = & \frac{1}{n}\sum_{i=1}^{n}x_{ij} \\
+        S_j & = & \sqrt{\frac{\sum_{n = 1}^{n}(x_ij-\overline{x_j} )^{2} i=1 }{n-1} }2 \\
+    \end{matrix}
+    \right.
+    $$
+   
+    Index conflict equation:
+
+    \begin{equation} \label{eq9}
+    R_j = \sum_{i = 1}^{p}(1-r_ij)      
+    \end{equation}
+
+    Information content equation:
+
+    \begin{equation} \label{eq10}
+       C_j = S_j\sum_{i = 1}^{p}=S_j\times R_j       
+        \end{equation}
+
+    Weight equation:
+
+    \begin{equation} \label{eq7}
+        W_j = \frac{C_j}{\sum_{j = 1}^{p}C_j}     
+        \end{equation}
+
+        We put the given data into equations to get the weight proportion Figure by using SPSSPRO.
+        \begin{figure}[H] 
+            \centering
+            \includegraphics[width=10cm,height=4cm]{f19.png}
+            \caption{weight proportion of the attribute of words } \label{f19}
+            \vspace{0.1cm}
+        \end{figure}
+
+        Afterwards, we use the weight proportion to gain a difficulty equation based on attributes of words:
+        \begin{equation} \label{eq7}
+             \varGamma_w = 0.607\times \rho_1 + 0.289\times \rho_2 + 0.05\times \rho_3 + 0.054\times \rho_4 
+            \end{equation}
+
+    \item {\bf Analyze the data}.
+    
+    Using scores reported from given data, we calculate the weight of the amount of guesses.
+    \begin{figure}[H] 
+        \centering
+        \includegraphics[width=7cm]{f20.png}
+        \caption{weight proportion of the attribute of words } \label{f19}
+        \vspace{0.1cm}
+    \end{figure}    
+
+    Then we are able to get a difficulty equation based on scores reported:
+    \begin{equation} \label{eq7}
+     \varGamma_s = 0.001\times \delta_1 + 0.016\times \delta_2 + 0.098\times \delta_3 + 0.05\times \delta _4 + 0.082\times \delta_5 + 0.216\times \delta_6 + 0.538\times \delta_7 
+    \end{equation}
+
+    After putting data into two difficulty equations above, we create a line chart to illustrate difficulty levels of the given words in different bases.
+    \begin{figure}[H] 
+        \centering
+        \includegraphics[width=13cm]{f21.png}
+        \caption{The results of two difficulty equations} \label{f19}
+        \vspace{0.1cm}
+    \end{figure} 
+
+    As shown in Figure 12, the trends of the two lines are about the same. Accordingly, the attributes of the word have an impact on how difficult an answer word is and consequently influence the percentage of scores reported in Hard Mode. 
+
+    \item {\bf Find the solution.}
+    
+    Based on the model results, we consider that these attributes affect the percentage of points scored in difficult mode.
+
+    We also expect that other properties of the word will affect the results, such as the part of speech, the frequency of the combined letter, etc. The test model we use ignores these attributes and considers them to have little effect on the results.
+
+    The influence of these attributes on the percentage of scores is from large to small:
+
+    Frequency of letter appearance > Containing duplicate letters > Frequency of initial letter appearance >  vowel inclusion.
+
+    Of these, the Frequency of initial letter appearance and vowel inclusion have negligible effects on the resulting percentage. The frequency of letter appearance is the most influential. The second thing is Containing duplicate letters.
+
+    Frequency of letter appearance, Frequency of initial letter appearance, and vowel inclusion is proportional to The size of the results. This means The higher their value, the less difficult the words.
+    
+    Containing duplicate letters is inversely proportional to The size of the results. This means The higher its value, the more difficult the words.
+
+\end{itemize}
+
+\subsection{Question 2}
+
+We create our model to make predictions of the distribution of reported results. To solve the problem, we introduce the Decision Tree \cite{7}.
+    
+ Each internal node in the Decision Tree is a split problem a test for an attribute of an instance is specified, which splits the sample to that node by a particular attribute. Every subsequent branch of that node corresponds to a possible value of that attribute. The average value of the output variables in the sample contained in the leaf node of the regression tree is the prediction result.
+
+\subsubsection{Model III: Predicting the distribution of results on a future date}
+
+\begin{itemize}
+    \item {\bf Develop our model.}
+    \begin{table}[H]  %h表示固定在当前位置
+        \centering        %设置居中
+        \caption{Decision Tree}  %表标题
+        \vspace{0.2cm}
+        \label{tab7}                       %设置表的引用标签
+        % \tabcolsep=1cm
+        \renewcommand\arraystretch{1.2}
+        \begin{tabular}{|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+        \hline                    %画横线
+        Time Cost & 0.009s \\ \hline  %各列间用&隔开
+        Data splitting & 	0.7   \\ \hline
+        The maximum depth of the tree &  10   \\ \hline
+        Minimum number of samples for internal node split &	2   \\ \hline
+        Minimum number of samples at a leaf node &	2   \\ \hline
+        Maximum number of  leaf node &	50  \\ \hline
+        \end{tabular}
+    \end{table}
+    We set these values to build the model.
+
+    \item {\bf Input to get the prediction.}
+    
+    The data has been classified by numbers of guesses (1,2,3,4,5,6,X) and difficulty levels based on scores and attributes respectively. We input these categorized data into the Decision Tree model to get the evaluation of our model (Table 8, 9) and values that illustrate the importance of attributes. The output is shown in the Figures 13 to 18.
+
+    % 表8
+\begin{table}[H]  %h表示固定在当前位置
+    \centering        %设置居中
+    \caption{Model evaluation results--Traning set}  %表标题
+    \vspace{0.2cm}
+    \label{tab8}                       %设置表的引用标签
+    % \tabcolsep=1cm
+    \renewcommand\arraystretch{1.2}
+    \begin{tabular}{|c|c|c|c|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+    \hline                    %画横线
+    ~ & 2 tries & 3 tries & 4 tries & 5 tries & 6 tries & 7 tries \\ \hline
+    MSE & 1.254 & 4.938 & 2.936 & 3.989 & 0.259 & 0 \\ \hline
+    RMSE &  1.12 & 2.222 &1.713 & 1.997 & 0.509 & 0 \\ \hline
+    MAE	&   0.845 & 1.615 & 1.179 & 1.407 & 0.364 & 0 \\ \hline
+    MAPE &  22.174 & 8.249 & 3.43 & 5.95 & 4.756 & 0 \\ \hline
+    $\boldsymbol{R}^{2}$ & 0.905 & 0.914 & 0.901 & 0.886 & 0.993 & 1\\ \hline
+    \end{tabular}
+\end{table}
+
+% 表8
+\begin{table}[H]  %h表示固定在当前位置
+    \centering        %设置居中
+    \caption{Model evaluation results--Testing set}  %表标题
+    \vspace{0.2cm}
+    \label{tab8}                       %设置表的引用标签
+    % \tabcolsep=1cm
+    \renewcommand\arraystretch{1.2}
+    \begin{tabular}{|c|c|c|c|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+    \hline                    %画横线
+    ~ & 2 tries & 3 tries & 4 tries & 5 tries & 6 tries & 7 tries \\ \hline
+    MSE &   8.43 & 21.242 & 12.904 & 22.761 & 5.76 & 0.682\\ \hline
+    RMSE &  2.903 & 4.609 & 3.592 & 4.771 & 2.4 & 0.826\\ \hline
+    MAE	&  2.109 & 3.655 & 2.814 & 3.737 & 1.555 & 0.424 \\ \hline
+    MAPE &  50.615 & 19.107 & 8.221 & 14.908 & 12.492 & 52.9 \\ \hline
+    $\boldsymbol{R}^{2}$ & 0.293 & 0.578 & 0.392 & 0.214 & 0.834 & 0.948\\ \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+	\centering
+    Blue line means the training values, green line means the testing values.
+
+	\begin{minipage}{0.32\linewidth}
+		\centering
+		\includegraphics[width=0.9\linewidth]{f4.png}
+		\caption{2 Tries}
+		\label{chutian1}%文中引用该图片代号
+	\end{minipage}
+	\begin{minipage}{0.32\linewidth}
+		\centering
+		\includegraphics[width=0.9\linewidth]{f5.png}
+		\caption{3 Tries}
+		\label{chutian2}%文中引用该图片代号
+	\end{minipage}
+	\begin{minipage}{0.32\linewidth}
+		\centering
+		\includegraphics[width=0.9\linewidth]{f6.png}
+		\caption{4 Tries}
+		\label{chutian2}%文中引用该图片代号
+	\end{minipage}
+	\qquad
+	%让图片换行，
+	\begin{minipage}{0.32\linewidth}
+		\centering
+		\includegraphics[width=0.9\linewidth]{f7.png}
+		\caption{5 Tries}
+		\label{chutian3}%文中引用该图片代号
+	\end{minipage}
+	\begin{minipage}{0.32\linewidth}
+		\centering
+		\includegraphics[width=0.9\linewidth]{f8.png}
+		\caption{6 Tries}
+		\label{chutian4}%文中引用该图片代号
+	\end{minipage}
+    \begin{minipage}{0.32\linewidth}
+		\centering
+		\includegraphics[width=0.9\linewidth]{f9.png}
+		\caption{7 Tries(x)}
+		\label{chutian5}%文中引用该图片代号
+	\end{minipage}
+   \end{figure}
+
+According to the value of $\boldsymbol{R}^{2}$ and other values for each tries, we consider that this model is more confident in its predictions, with higher accuracy on the training set than the test set.
+
+When predicting future outcomes, we consider that there is a linear relationship between the difficulty values we get from the scores based on the first question and the difficulty values obtained from the word attributes.
+
+Consider the simple model:
+
+\begin{equation} \label{eq5}
+    \varGamma_s^{'} = \beta_0 + \beta_1\varGamma_w + \varepsilon , \varepsilon \sim N(0,\sigma^{2} )   
+\end{equation}
+
+We use R to calculate the estimated regression equation:
+
+\begin{equation} \label{eq5}
+    \varGamma_s^{'} =9.9978 + 0.0497\times \varGamma_w + \varepsilon , \varepsilon \sim N(0,\sigma^{2} )   
+\end{equation}
+
+
+\item {\bf There is uncertainty about our model.}
+
+\begin{itemize}
+    \item[1)] We ignore the prediction of 1 try, which we believe is determined by chance does not reflect the effect of difficulty.
+    \item[2)] When predicting future outcomes, the value of the input data is determined by the assumed function value with some error.
+\end{itemize}
+
+\item {\bf Test our model and solve the problem.}
+
+Plug the word EERIE into the equation 15 and model to get the prediction.
+
+\begin{table}[H]  %h表示固定在当前位置
+    \centering        %设置居中
+    \caption{The prediction of EERIE}  %表标题
+    \vspace{0.1cm}
+    \label{tab8}                       %设置表的引用标签
+    % \tabcolsep=1cm
+    \renewcommand\arraystretch{1.2}
+    \begin{tabular}{|c|c|c|c|c|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+    \hline                    %画横线
+    Word & 1 try & 2 tries & 3 tries & 4 tries & 5 tries & 6 tries & 7 tries \\ \hline
+    EERIE & $\boldsymbol\leqslant $ 5.83949 & 3.4839 &	15.75 &	33.2593 & 26.4286 & 13.28571 & 2    \\ \hline
+    \end{tabular}
+\end{table}
+
+The prediction of 1 try is obtained by subtracting 100\% of the other prediction values, which we consider to represent the prediction result of 1 try.
+
+From Figure 13 to 18, We find that the curves roughly coincide, so the accuracy of this model is high.
+
+\end{itemize}
+
+\subsection{Question 3}
+We propose to develop a model which enables us to categorize the answer words by difficulty and illustrate the connection between attributes of a given word and every classification.
+    \subsubsection{Model IV: Dividing grades of difficulty}
+    We introduce in the Cluster analysis model(K-means) \cite{8}.
+    
+ Clustering analysis is a center-based clustering algorithm (k-means clustering), which iteratively groups samples into K clusters such that the sum of the distances between each sample and the center or mean of its cluster is minimized. Different from the hierarchical clustering algorithm which clusters according to the field, fast cluster analysis clusters according to the sample.
+\begin{itemize}
+    \item {\bf Classify the data. }
+    
+    We put the given data into the equation based on attributes of words from Question 1 and create a boxplot according to the result in order to analyze the discrete degree.
+    We use SPSS to get the result of the Clustering analysis.The elbow method is further applied to obtain K-Means, where the Y-axis is the aggregation coefficient and the X-axis is the number of cluster categories k.
+    \begin{figure}[H] 
+        \centering
+        \includegraphics[width=10cm,height=3.5cm]{a.png}
+        \caption{The result of the Clustering analysis} \label{f19}
+        \vspace{0.1cm}
+    \end{figure}
+
+    From Figure 19, It can be seen that when the number of clustering categories is 5, the decreasing trend of aggregation coefficient is significantly slowed down, so the category of clustering is 5.
+    
+    \begin{table}[H]  %h表示固定在当前位置
+    \centering        %设置居中
+    \caption{Field difference analysis}  %表标题
+    \vspace{0.1cm}
+    \label{tab8}                       %设置表的引用标签
+    % \tabcolsep=1cm
+    \renewcommand\arraystretch{1.2}
+    \begin{tabular}{|c|c|c|c|c|c|c|}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+    \hline                    %画横线
+    ~ & category 1 & category 3 & category 2 & category 5 & category 4 & P \\ \hline
+    Data number & 118(41.9\%) & 73(26.0\%) & 53(18.9\%) & 31(11.3\%) & 6(2.13\%)  & ~\\ \hline
+    Initial & .105±0.107 & 0.069±0.073 & 0.065±0.094 & 0.076±0.075 & 0.144±0.146 & 0.016** \\ \hline
+    Duplicate letters & 0.237±0.427 & 0.205±0.407 & 0.528±0.504 & 0.161±0.374 & 0.333±0.516 & 0.000***\\ \hline
+    Common level & 3.466±0.501 & 2.0±0.0 & 1.0±0.0 & 2.774±0.669 & 2.5±1.049 &  0.000*** \\ \hline
+    Vowel inclusion	& 1.0±0.0 & 0.986±0.117 & 1.0±0.0 & 0.968±0.18  & 1.0±0.0 &  0.347 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]  %h表示固定在当前位置
+    \centering        %设置居中
+    \caption{Evaluation index}  %表标题
+    \vspace{0.1cm}
+    \label{tab8}                       %设置表的引用标签
+    % \tabcolsep=1cm
+    \renewcommand\arraystretch{1.2}
+    \begin{tabular}{ccc}  %3个c表示3列, |可选, 表示绘制各列间的竖线
+    \hline                    %画横线
+    Coefficient of contour & DBI &  CH \\ \hline
+    0.366 & 0.998 & 165.925 \\ \hline
+\end{tabular}
+\end{table}
+
+DBI (Davies-bouldin) : This metric measures the ratio of the intra-cluster distance followed by the inter-cluster distance for any two clusters. A smaller value of this index indicates a better clustering effect.
+
+CH(Calinski-Harbasz Score) : The closeness of the cluster (denominator) was measured by calculating the sum of squared distances between each point in the cluster and the center of the cluster, and the separation of the data set (numerator) was measured by calculating the sum of squared distances between the center point of the cluster and the center point of the data set. The CH index was obtained by the ratio of separation and closeness, and the larger the CH, the better the clustering effect.
+
+The difficulty grade is determined by the category of 1, 3, 2, 5, and 4. Where category 1 is the easiest and category 4 is the hardest.
+
+We used a clustering classification method to classify quantitative variables into qualitative treatments and assign difficulty levels. Based on the values of DBI and CH, the accuracy of this classification model is high.
+
+\item {\bf Identify attributes of a given word associated with each classification. }
+
+The values in the table are the mean ± standard deviation. Table 11 shows: 
+
+Based on P value, we consider that initial, duplicate letters and commen level: The level shows significance and the null hypothesis is rejected, indicating that the variable intital has a significant difference between the categories divided by the cluster analysis.
+Vowel inclusion did not show significant differences between the categories classified by cluster analysis.
+
+\item {\bf Illustrate the difficulty grade of the word EERIE.}
+    
+    Combining our above analyses and calculations by using equation 12, we can get:
+    
+    The word EERIE belongs to category 2, Means its difficulty grade is above average.
+
+
+\end{itemize}
+% By Equation \eqref{eq3}, we have ......
+
+\subsection{Question 4}
+
+The Q-Q plot compares the number of quantiles between the real data and the distribution to be tested. It is used to test whether the data is similar to a particular distribution. If the data under test conforms to the specified distribution, the points representing the sample data should be roughly on the line representing the theoretical distribution.
+
+Using the Q-Q plot in SPSS, we plot the number of attempts. The red line represents the value of the actual data, and the black line represents the predicted value.
+
+\begin{figure}[H]
+	\centering
+\begin{minipage}{0.32\linewidth}
+    \centering
+    \includegraphics[width=0.9\linewidth]{q1.png}
+    \caption{Q-Q 1}
+    \label{chutian1}%文中引用该图片代号
+\end{minipage}
+\begin{minipage}{0.32\linewidth}
+    \centering
+    \includegraphics[width=0.9\linewidth]{q2.png}
+    \caption{Q-Q 2}
+    \label{chutian2}%文中引用该图片代号
+\end{minipage}
+\begin{minipage}{0.32\linewidth}
+    \centering
+    \includegraphics[width=0.9\linewidth]{q3.png}
+    \caption{Q-Q 3}
+    \label{chutian2}%文中引用该图片代号
+\end{minipage}
+\qquad
+%让图片换行，
+\begin{minipage}{0.32\linewidth}
+    \centering
+    \includegraphics[width=0.9\linewidth]{q4.png}
+    \caption{Q-Q 4}
+    \label{chutian3}%文中引用该图片代号
+\end{minipage}
+\begin{minipage}{0.32\linewidth}
+    \centering
+    \includegraphics[width=0.9\linewidth]{q5.png}
+    \caption{Q-Q 5}
+    \label{chutian4}%文中引用该图片代号
+\end{minipage}
+\begin{minipage}{0.32\linewidth}
+    \centering
+    \includegraphics[width=0.9\linewidth]{q6.png}
+    \caption{Q-Q 6}
+    \label{chutian5}%文中引用该图片代号
+\end{minipage}
+\begin{minipage}{0.32\linewidth}
+    \centering
+    \includegraphics[width=0.9\linewidth]{q7.png}
+    \caption{Q-Q 7}
+    \label{chutian5}%文中引用该图片代号
+\end{minipage}
+\end{figure}
+
+\noindent We find that when the number of trials is between 2 and 5, the data is close to normally distributed.
+
+\section{Strength and Weakness}
+
+\subsection{Strength}
+
+\begin{itemize}
+    \item The model we established is clear and based on theories which are easy to understand. Our model only depends on data and are not influenced by other variables. Besides, the model does not need too much data.
+    \item Algorithms we use in our model can be implemented easily and they have strong interpretability and fast arithmetic speed. At the same time, we do plenty of visualization of algorithms and results we get.
+    \item Even if results we get from the model assumptions violate the real data, our model still performs well.
+\end{itemize}
+
+\subsection{Weakness}
+
+\begin{itemize}
+    \item It is not so simple to make an exactly accurate comprehension of the value of K in our model.\item Algorithms we use in our model can be implemented easily and they have strong interpretability and fast arithmetic speed. At the same time, we do plenty of visualization of algorithms and results we get.
+    \item Timing sequence data is required to be stable, or stable after differencing.
+\end{itemize}
+
+\section{Letter to the Puzzle Editor of the New York Times.}
+From: Team \#2305810
+
+\noindent To: the Puzzle Editor of the New York Times
+
+\noindent Date: February 21, 2023
+
+\noindent Dear Puzzle Editor of the New York Times,
+
+We are very interested in the WORDLE game. For this reason, we have conducted data analyses on the game score results in the past year. We performed time prediction analyses on it to predict the future reporting results. At the same time, it can analyze the influence of the attributes of the words on the results of the game. We even calculated the word difficulty and difficulty grades. Of course, we have fully evaluated the feasibility of our task.
+
+We thoroughly examined the overall reported results and these results in the Hard Mode. We discovered that after preprocessing the data, the overall reported results and  results in Hard Mode almost follow the same trend over time. And the number of results in the Hard Mode is basically ten percent of the total number of results.
+
+We also found that the difficulty of the words per day, the contingency of players guesses and the popularity of the puzzle all affect the number of  reported results each day. The trend of the future number of reported results is decreasing over time. To this end, our proposed solution is to advertise your game more.
+
+While exploring the impact of word attributes on the reported results, we determined four attributes of words: 
+\begin{itemize}
+    \item frequency of letter
+    \item appearance
+    \item frequency of initial letter appearance
+    \item containing duplicate letters, and vowel inclusion.
+\end{itemize}
+Combining these factors with the score of the number of guesses, our calculation offers a difficulty value reflected by these attributes. In addition, we found that the most frequent initial of the word is letter S, and the most frequent letter in the word is letter E. Of course, both these two kinds of frequency  are inversely proportional to the difficulty level of the answer word. The commonness of a word makes an influence on its difficulty level as well.
+
+We further propose the decision tree model, which can predict the percentage of score outcomes based on words. It turns out that the accuracy of this prediction method is quite high on small data and future prediction, and there is a high correlation between the attributes of words and the results of the day.
+
+Empirical knowledge shows that the difficulty of the word, is closely related to the score outcome.  Since we know that our decision tree model is reliable and closely related to the score percentage, we can leverage it to indicate future reported results for words.
+
+To solve the difficulty classification problem, we introduce cluster analysis to perform the partition. Based on our testing of the model, we found that the difficulty level of the word can be changed to 5 levels, and the levels are related to the attributes of the word.
+
+When analyzing the overall data, we found that the percentage of results for each trial presented a normal distribution, with the distribution from 2 to 6 trials being the closest to Gaussian.This also means that although word difficulty does affect the results, the distribution of results for the number of trials is roughly similar.
+
+If you want to know more details, please refer to our thesis. We will be glad to discuss with  you on our solution details.
+
+\rightline{Yours,}
+\rightline{Sincerely,}
+\rightline{Team \#2305810 of MCM 2023}
+
+\newpage
+\begin{thebibliography}{99}
+\addcontentsline{toc}{section}{Reference}
+
+\bibitem{1} "Wordle-The New York Times." The New York Times, 2022. Accessed December 13, 2022 at \url{https://www.nytimes.com/games/wordle/index.html}.
+\bibitem{2} Scientific Platform Serving for Statistics Professional 2021. SPSSPRO. (Version 1.0.11)[Online Application Software]. Retrieved from \url{https://www.spsspro.com}.
+\bibitem{3} Mathematics - Statistics; Data on Statistics Reported by Researchers at Lund University (Lag Truncation and the Local Asymptotic Distribution of the ADF Test for a Unit Root)[J]. Journal of Mathematics, 2019.
+\bibitem{4} Xing Yanya. et al. Time series prediction via elastic net regularization integrating partial autocorrelation[J]. Applied Soft Computing Journal, 2022, 129.
+\bibitem{5} Diakouland D, Mavrotas G, Papayannakis L. Determining objective weights in multiple criteria problems: The CRITIC method [J]. Computer Ops Res, 1995, 22: 763-770.
+\bibitem{6} Lewand, Robert. Cryptological mathematics. [s.l.] : The Mathematical Association of America, 2000. 199 p. ISBN 0-88385-719-7. \url{http://en.algoritmy.net/article/40379/Letter-frequency-English}.
+\bibitem{7} Greer Rachel and von Wirth Timo and Loorbach Derk. The Circular Decision-Making Tree: an Operational Framework.[J]. Circular economy and sustainability, 2022,: 21-26.
+\bibitem{8} Saroj,Kavita.Review:study on simple k mean and modified K mean clustering technique[J].International Journal of Computer Science Engineering and Technology,2016,6(7): 279-281.
+
+\end{thebibliography}
+
+
+\end{document}
+%%
+%% This work consists of these files mcmthesis.dtx,
+%%                                   figures/ and
+%%                                   code/,
+%% and the derived files             mcmthesis.cls,
+%%                                   mcmthesis-demo.tex,
+%%                                   README,
+%%                                   LICENSE,
+%%                                   mcmthesis.pdf and
+%%                                   mcmthesis-demo.pdf.
+%%
+%% End of file `mcmthesis-demo.tex'.

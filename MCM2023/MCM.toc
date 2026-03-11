@@ -1,0 +1,23 @@
+\contentsline {section}{\numberline {1}Introduction}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Background}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Introduction of Wordle}{2}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Restatement of the Problem and Our Analyses}{2}{subsection.1.3}%
+\contentsline {subsubsection}{\numberline {1.3.1}Specific Problems to Solve}{2}{subsubsection.1.3.1}%
+\contentsline {subsubsection}{\numberline {1.3.2}Analyses of the Problems}{2}{subsubsection.1.3.2}%
+\contentsline {section}{\numberline {2}Data preprocessing}{3}{section.2}%
+\contentsline {section}{\numberline {3}Assumptions and Occasions}{3}{section.3}%
+\contentsline {section}{\numberline {4}Notations}{4}{section.4}%
+\contentsline {section}{\numberline {5}Model Establishment and Problem Solutions}{4}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Question 1}{4}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}Model I : Predicting Number of Reported Results}{5}{subsubsection.5.1.1}%
+\contentsline {subsubsection}{\numberline {5.1.2}Model II : Probing whether attributes of words affect the percentage of scores reported in Hard Mode}{11}{subsubsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.2}Question 2}{16}{subsection.5.2}%
+\contentsline {subsubsection}{\numberline {5.2.1}Model III: Predicting the distribution of results on a future date}{16}{subsubsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.3}Question 3}{18}{subsection.5.3}%
+\contentsline {subsubsection}{\numberline {5.3.1}Model IV: Dividing grades of difficulty}{18}{subsubsection.5.3.1}%
+\contentsline {subsection}{\numberline {5.4}Question 4}{20}{subsection.5.4}%
+\contentsline {section}{\numberline {6}Strength and Weakness}{20}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Strength}{20}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Weakness}{21}{subsection.6.2}%
+\contentsline {section}{\numberline {7}Letter to the Puzzle Editor of the New York Times.}{21}{section.7}%
+\contentsline {section}{Reference}{23}{section*.1}%
